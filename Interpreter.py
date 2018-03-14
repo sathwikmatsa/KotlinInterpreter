@@ -44,7 +44,7 @@ class Interpreter(NodeVisitor):
         value = self.visit(node.right)   
         if self.GLOBAL_SCOPE[var_name][1] == 'Int':
             if type(value) == int:
-                self.GLOBAL_SCOPE[var_name][0] = self.visit(node.right)
+                self.GLOBAL_SCOPE[var_name][0] = int(self.visit(node.right))
             else:
                 self.error("Kotlin: The "+self.getType(value)+" literal does not conform to the expected type Int")    
         elif self.GLOBAL_SCOPE[var_name][1] == 'Double':
@@ -62,6 +62,8 @@ class Interpreter(NodeVisitor):
         var_name = node.value
         val = self.GLOBAL_SCOPE.get(var_name)[0]
         if val is None:
+            if var_name in self.GLOBAL_SCOPE:
+                self.error("Kotlin: Variable '"+var_name+"' must be initialized")
             raise NameError(repr(var_name))
         else:
             return val
@@ -81,6 +83,15 @@ class Interpreter(NodeVisitor):
         var_name = node.left.value
         dt = node.right.value
         self.GLOBAL_SCOPE[var_name] = [None,dt,VAR_TYPE.type]
+
+    def visit_Dec_Init(self, node):
+        VAR_TYPE = node.VAR_TYPE
+        var_name = node.left.value
+        dt = node.DATA_TYPE.value
+        value = self.visit(node.right)
+        if dt != self.getType(value):
+            self.error("Kotlin: The "+self.getType(value)+" literal does not conform to the expected type "+dt)
+        self.GLOBAL_SCOPE[var_name] = [value,dt,VAR_TYPE.type]    
     
     def visit_BinOp(self, node):
         if node.op.type == PLUS:
@@ -104,6 +115,25 @@ class Interpreter(NodeVisitor):
             return +self.visit(node.expr)
         elif op == MINUS:
             return -self.visit(node.expr)
+
+    def visit_Post_Unary(self, node):
+        value = self.visit(node.var)
+        var_name = node.var.value
+        if node.op.type == INC:
+            self.GLOBAL_SCOPE[var_name][0]+=1
+        elif node.op.type == DEC:
+            self.GLOBAL_SCOPE[var_name][0]-=1    
+        return value
+    
+    def visit_Pre_Unary(self, node):
+        value = self.visit(node.var)
+        var_name = node.var.value
+        if node.op.type == INC:
+            self.GLOBAL_SCOPE[var_name][0]+=1
+            return value+1
+        elif node.op.type == DEC:
+            self.GLOBAL_SCOPE[var_name][0]-=1 
+            return value-1          
 
     def visit_PrintLn(self, node):
         print(self.visit(node.node))
