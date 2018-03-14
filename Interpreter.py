@@ -26,6 +26,8 @@ class Interpreter(NodeVisitor):
             return 'Double'
         elif s == 'Str':
             return 'String'
+        elif s == 'Bool':
+            return 'Boolean'    
         return s          
 
     def visit_Compound(self, node):
@@ -56,7 +58,12 @@ class Interpreter(NodeVisitor):
             if type(value) == str:
                 self.GLOBAL_SCOPE[var_name][0] = self.visit(node.right)
             else:
-                self.error("Kotlin: The "+self.getType(value)+" literal does not conform to the expected type String")    
+                self.error("Kotlin: The "+self.getType(value)+" literal does not conform to the expected type String")
+        elif self.GLOBAL_SCOPE[var_name][1] == 'Boolean':
+            if type(value) == bool:
+                self.GLOBAL_SCOPE[var_name][0] = self.visit(node.right)
+            else:
+                self.error("Kotlin: The "+self.getType(value)+" literal does not conform to the expected type Boolean")           
 
     def visit_Var(self, node):
         var_name = node.value
@@ -75,7 +82,11 @@ class Interpreter(NodeVisitor):
         if type(value) == int:
             dt = 'Int'
         elif type(value) == float:
-            dt = 'Double'    
+            dt = 'Double'
+        elif type(value) == str:
+            dt = 'String'
+        elif type(value) == bool:
+            dt = 'Boolean'          
         self.GLOBAL_SCOPE[var_name] = [self.visit(node.right),dt,VAR_TYPE.type]
 
     def visit_Declaration(self, node):
@@ -102,12 +113,27 @@ class Interpreter(NodeVisitor):
             return self.visit(node.left) * self.visit(node.right)
         elif node.op.type == DIV:
             return self.visit(node.left) / self.visit(node.right)
+        elif node.op.type == LT:
+            return self.visit(node.left) < self.visit(node.right)
+        elif node.op.type == GT:
+            return self.visit(node.left) > self.visit(node.right)
+        elif node.op.type == LTE:
+            return self.visit(node.left) <= self.visit(node.right)
+        elif node.op.type == GTE:
+            return self.visit(node.left) >= self.visit(node.right)
+        elif node.op.type == EQ:
+            return self.visit(node.left) == self.visit(node.right)
+        elif node.op.type == NE:
+            return self.visit(node.left) != self.visit(node.right)                     
 
     def visit_Num(self, node):
         return node.value
 
     def visit_Str(self, node):
-        return node.value    
+        return node.value 
+
+    def visit_Bool(self, node):
+        return node.value       
 
     def visit_UnaryOp(self, node):
         op = node.op.type
