@@ -13,7 +13,12 @@ class Num(AST):
 class Str(AST):
     def __init__(self, token):
         self.token = token
-        self.value = token.value            
+        self.value = token.value
+
+class Bool(AST):
+    def __init__(self, token):
+        self.token = token
+        self.value = token.value                   
 
 class BinOp(AST):
     def __init__(self,left,op,right):
@@ -118,6 +123,16 @@ class Parser(object):
         elif token.type == String:
             self.eat(String)
             return Str(token)
+        elif token.type == 'true':
+            self.eat('true')
+            token.type = Boolean
+            token.value = True
+            return Bool(token)
+        elif token.type == 'false':
+            self.eat('false')
+            token.type = Boolean
+            token.value = False
+            return Bool(token)
         elif token.type == INC:
             self.eat(INC)
             node = self.variable()
@@ -150,7 +165,7 @@ class Parser(object):
                     
         return node   
 
-    def expr(self):
+    def expr2(self):
         node = self.term()
 
         while self.current_token.type in (PLUS,MINUS):
@@ -162,6 +177,26 @@ class Parser(object):
             node = BinOp(left =node, op = token, right = self.term()) 
                
         return node
+
+    def expr1(self):
+        node = self.expr2()
+
+        while self.current_token.type in (LT,GT,GTE,LTE):
+            token = self.current_token
+            self.eat(token.type)
+            node = BinOp(left =node, op = token, right = self.expr2()) 
+               
+        return node
+
+    def expr(self):
+        node = self.expr1()
+
+        while self.current_token.type in (EQ,NE):
+            token = self.current_token
+            self.eat(token.type)
+            node = BinOp(left =node, op = token, right = self.expr1()) 
+               
+        return node        
 
     def empty(self):
         """An empty production"""
@@ -284,9 +319,9 @@ class Parser(object):
         self.eat('args')
         self.eat(COLON)
         self.eat('Array')
-        self.eat(LAB)
+        self.eat(LT)
         self.eat(ID)
-        self.eat(RAB)
+        self.eat(GT)
         self.eat(RPAREN)
 
         node = self.compound_statement()
