@@ -3,13 +3,17 @@
 NUM,PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, LBRACE, RBRACE, SEMI, EOF = 'NUM','PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', '{', '}', ';', 'EOF'
 ASSIGN, COLON = '=', ':'
 ID = 'ID'
-Int , Double, String = 'Int', 'Double', 'String' #Supported Data Types
-LAB = '<'
-RAB = '>'
+Int , Double, String, Boolean = 'Int', 'Double', 'String', 'Boolean' #Supported Data Types
+LT = '<'
+GT = '>'
 QUOTES = '"'
 NWLN = '\n'
 INC = '++'
 DEC = '--'
+GTE = '>='
+LTE = '<='
+EQ = '=='
+NE = '!='
 
 
 class Token(object):
@@ -32,4 +36,6 @@ RESERVED_KEYWORDS = {
     'args': Token('args','args'),
     'Array': Token('Array','Array'),
     'println': Token('println','println'),
+    'true': Token('true','true'),
+    'false': Token('false','false'),
 }        
