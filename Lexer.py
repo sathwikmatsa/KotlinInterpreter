@@ -8,6 +8,8 @@ class Lexer(object):
         self.text = text
         self.pos = 0
         self.current_char = self.text[self.pos]
+        self.prev_token = Token(None,None)
+        self.eof = 0
 
     def error(self):
         raise Exception('Invalid Character')    
@@ -78,6 +80,7 @@ class Lexer(object):
         while self.current_char is not None:
             self.skip_whitespaces()
             self.skip_tabs()
+            self.last_token = self.prev_token
             if self.current_char.isdigit():
                 #return Token(INTEGER,self.integer())
                 self.prev_token = self.num()
@@ -210,11 +213,13 @@ class Lexer(object):
                 return self.prev_token
             elif self.current_char == '\n':
                 self.skip_empty()
-                self.prev_token = Token(NWLN, '\n')
-                return self.prev_token 
+                return Token(NWLN, '\n') 
             print(self.current_char+' '+self.peek())                                         
             self.error()
-        
+        self.eof+=1
+        if self.eof==1:
+            self.last_token = self.prev_token
+        else:
+            self.last_token = Token(EOF,None)
         return Token(EOF,None) 
-
 # file = open('test.kt','r');source = file.read();lexer = Lexer(source)
