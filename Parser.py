@@ -46,6 +46,10 @@ class Compound(AST):
     def __init__(self):
         self.children = [] 
 
+class ConditionalBlock(AST):
+    def __init__(self):
+        self.children = []        
+
 class InitializeVariable(AST):
     def __init__(self, VAR_TYPE, left, op, right):
         self.VAR_TYPE = VAR_TYPE
@@ -92,8 +96,8 @@ class Parser(object):
         self.lexer = lexer
         self.current_token = self.lexer.get_next_token()
 
-    def error(self):
-        raise Exception("Invalid Syntax")
+    def error(self,message = "Invalid Syntax"):
+        raise Exception(message)
 
     def eat(self,token_type):
         if(self.current_token.type == token_type):
@@ -247,7 +251,33 @@ class Parser(object):
         value = self.expr()
         node = PrintLn(value)
         return node
-            
+
+    def if_block(self):
+        self.eat('if')
+        condition = self.expr()
+        cs = self.compound_statement()
+        blocks = ConditionalBlock()
+        blocks.children.append([condition,cs])
+        if self.current_token.type == NWLN:
+            self.eat(NWLN)
+        while self.current_token.type == 'else':
+            self.eat('else') 
+            if self.current_token.type == 'if':
+                self.eat('if')
+                condition = self.expr()
+                cs = self.compound_statement()
+                blocks.children.append([condition,cs])
+            elif self.current_token.type == LBRACE:
+                cs = self.compound_statement()
+                token = Token('Boolean',True)
+                node = Bool(token)
+                blocks.children.append([node,cs])
+                return blocks
+            else:
+                self.error("unexpected token of type: "+str(self.current_token.type)+': '+str(self.current_token.value))
+            while self.current_token.type == NWLN:
+                self.eat(NWLN)       
+        return blocks  
 
     def statement(self):
         """
@@ -256,6 +286,7 @@ class Parser(object):
                   | declaration statement
                   | variable initialization
                   | print statement
+                  | if block
                   | empty
         """ 
 
@@ -266,7 +297,9 @@ class Parser(object):
         elif self.current_token.type in ('val','var'):
             node = self.decl_or_init()
         elif self.current_token.type == 'println':
-            node = self.print_statement()    
+            node = self.print_statement()
+        elif self.current_token.type == 'if':
+            node = self.if_block()
         else:
             node = self.empty()
         return node
@@ -279,7 +312,7 @@ class Parser(object):
         node = self.statement()
         results = [node]
 
-        while self.current_token.type in (SEMI,NWLN):
+        while self.current_token.type in (SEMI,NWLN) or (self.lexer.last_token.value == '}'and self.current_token.value != '}'):
             if self.current_token.type == SEMI:
                 self.eat(SEMI)
                 if self.current_token.type == NWLN:
@@ -291,7 +324,10 @@ class Parser(object):
                     if self.current_token.type == NWLN:
                         self.eat(NWLN)       
             results.append(self.statement())
+            print(self.current_token)
+            print(self.lexer.last_token)
         if self.current_token.type == ID:
+            print(self.current_token)
             self.error()
 
         return results   
@@ -302,6 +338,8 @@ class Parser(object):
         """   
         self.eat(LBRACE)
         nodes = self.statement_list()
+        print(self.current_token)
+        print(self.lexer.last_token)
         self.eat(RBRACE)
 
         root = Compound()
