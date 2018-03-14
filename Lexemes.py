@@ -3,10 +3,14 @@
 NUM,PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, LBRACE, RBRACE, SEMI, EOF = 'NUM','PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', '{', '}', ';', 'EOF'
 ASSIGN, COLON = '=', ':'
 ID = 'ID'
-Int , Double, String = 'Int', 'Double', 'String'
+Int , Double, String = 'Int', 'Double', 'String' #Supported Data Types
 LAB = '<'
 RAB = '>'
 QUOTES = '"'
+NWLN = '\n'
+INC = '++'
+DEC = '--'
+
 
 class Token(object):
 
