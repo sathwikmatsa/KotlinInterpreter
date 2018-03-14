@@ -129,7 +129,27 @@ class Lexer(object):
                 self.advance()
                 self.text = self.text[:self.pos]+self.prev_token.value+' / '+self.text[self.pos:]
                 self.current_char = self.text[self.pos]
-                return Token(ASSIGN,'=')                        
+                return Token(ASSIGN,'=')
+            elif self.current_char == '>' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.prev_token = Token(GTE,'>=')
+                return self.prev_token 
+            elif self.current_char == '<' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.prev_token = Token(LTE,'<=')
+                return self.prev_token
+            elif self.current_char == '!' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.prev_token = Token(NE,'!=')
+                return self.prev_token
+            elif self.current_char == '=' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.prev_token = Token(EQ,'==')
+                return self.prev_token                                      
             elif self.current_char == '+':
                 self.advance()
                 self.prev_token = Token(PLUS,'+')
@@ -179,11 +199,11 @@ class Lexer(object):
                 return self.prev_token
             elif self.current_char == '<':
                 self.advance()
-                self.prev_token = Token(LAB,'<')
+                self.prev_token = Token(LT,'<')
                 return self.prev_token
             elif self.current_char == '>':
                 self.advance()
-                self.prev_token = Token(RAB,'>')
+                self.prev_token = Token(GT,'>')
                 return self.prev_token
             elif self.current_char == '"':
                 self.prev_token = self._string()
