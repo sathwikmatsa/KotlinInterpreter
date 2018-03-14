@@ -7,8 +7,7 @@ import sys
 def main():
     if len(sys.argv) == 2:
         file = open(sys.argv[1],'r')
-        source = file.read().splitlines()
-        source = "".join(source)
+        source = file.read()
         lexer = Lexer(source)
         parser = Parser(lexer)
         interpreter = Interpreter(parser)
