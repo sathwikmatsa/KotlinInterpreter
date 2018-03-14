@@ -24,7 +24,17 @@ class BinOp(AST):
 class UnaryOp(AST):
     def __init__(self,op,expr):
         self.token = self.op = op
-        self.expr = expr     
+        self.expr = expr 
+
+class Post_Unary(AST):
+    def __init__(self,op,var):
+        self.token = self.op = op
+        self.var = var
+
+class Pre_Unary(AST):
+    def __init__(self,op,var):
+        self.token = self.op = op
+        self.var = var            
 
 class Compound(AST):
     """Represents a '{ ... }' block"""
@@ -44,6 +54,13 @@ class Declaration(AST):
         self.left = left
         self.token = self.op = op
         self.right = right
+
+class Dec_Init(AST):
+    def __init__(self, VAR_TYPE, left, DATA_TYPE, right):
+        self.VAR_TYPE = VAR_TYPE
+        self.left = left
+        self.DATA_TYPE = DATA_TYPE
+        self.right = right        
 
 class Assign(AST):
     def __init__(self, left, op, right):
@@ -80,7 +97,7 @@ class Parser(object):
             self.error()
 
     def factor(self):
-        """factor : (PLUS | MINUS) factor | NUM | LPAREN expr RPAREN | String"""
+        """factor : (PLUS | MINUS) factor | NUM | LPAREN expr RPAREN | String | pre _var | post _var"""
         token = self.current_token
         if token.type == PLUS:
             self.eat(PLUS)
@@ -100,10 +117,25 @@ class Parser(object):
             return node
         elif token.type == String:
             self.eat(String)
-            return Str(token)     
-        else:
+            return Str(token)
+        elif token.type == INC:
+            self.eat(INC)
             node = self.variable()
-            return node     
+            return Pre_Unary(token,node)
+        elif token.type == DEC:
+            self.eat(DEC)
+            node = self.variable()
+            return Pre_Unary(token,node)
+        elif token.type == ID:
+            node = self.variable()
+            token = self.current_token
+            if token.type == INC:
+                self.eat(INC)
+                return Post_Unary(token,node)
+            elif token.type == DEC:
+                self.eat(DEC)    
+                return Post_Unary(token,node)                 
+            return node    
 
     def term(self):
         node = self.factor()
@@ -163,7 +195,12 @@ class Parser(object):
             self.eat(COLON)
             right = self.current_token
             self.eat(ID)
-            node = Declaration(VAR_TYPE,left,op,right)
+            if self.current_token.type == ASSIGN:
+                self.eat(ASSIGN)
+                EXP_VALUE = self.expr()
+                node = Dec_Init(VAR_TYPE,left,right,EXP_VALUE)
+            else:
+                node = Declaration(VAR_TYPE,left,op,right)
         elif op.type == ASSIGN:
             self.eat(ASSIGN)
             right = self.expr()
@@ -207,8 +244,17 @@ class Parser(object):
         node = self.statement()
         results = [node]
 
-        while self.current_token.type == SEMI:
-            self.eat(SEMI)
+        while self.current_token.type in (SEMI,NWLN):
+            if self.current_token.type == SEMI:
+                self.eat(SEMI)
+                if self.current_token.type == NWLN:
+                    self.eat(NWLN)
+            elif self.current_token.type == NWLN:
+                self.eat(NWLN)
+                if self.current_token.type == SEMI:
+                    self.eat(SEMI)
+                    if self.current_token.type == NWLN:
+                        self.eat(NWLN)       
             results.append(self.statement())
         if self.current_token.type == ID:
             self.error()
