@@ -27,12 +27,16 @@ class Lexer(object):
             return self.text[peek_pos]              
 
     def skip_whitespaces(self):
-        while self.current_char is not None and self.current_char.isspace():
+        while self.current_char is not None and self.current_char == ' ':
             self.advance()
 
-    def skip_newlines(self):
-        while self.current_char is not None and (self.current_char=='\n' or self.current_char == '\t'):
+    def skip_tabs(self):
+        while self.current_char is not None and (self.current_char == '\t'):
             self.advance()        
+
+    def skip_empty(self):
+        while self.current_char is not None and self.current_char.isspace():
+            self.advance()
 
     def num(self):
         result=''
@@ -73,53 +77,124 @@ class Lexer(object):
 
         while self.current_char is not None:
             self.skip_whitespaces()
-            self.skip_newlines()
+            self.skip_tabs()
             if self.current_char.isdigit():
                 #return Token(INTEGER,self.integer())
-                return self.num()
+                self.prev_token = self.num()
+                return self.prev_token
+            elif self.current_char == '/' and self.peek() == '/':
+                while self.current_char != '\n':
+                    self.advance()    
+                self.skip_empty()
+                self.prev_token = Token(NWLN, '\n')
+                return self.prev_token 
+            elif self.current_char == '/' and self.peek() == '*':
+                while self.current_char != '*' or self.peek() != '/':
+                    self.advance()
+                self.advance()
+                self.advance() 
+                self.skip_empty()
+                self.prev_token = Token(NWLN, '\n')
+                return self.prev_token           
+            elif self.current_char == '+' and self.peek() == '+':
+                self.advance()
+                self.advance()
+                self.prev_token = Token(INC,'++')
+                return self.prev_token
+            elif self.current_char == '-' and self.peek() == '-':
+                self.advance()
+                self.advance()
+                self.prev_token = Token(DEC,'--')
+                return self.prev_token
+            elif self.current_char == '+' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.text = self.text[:self.pos]+self.prev_token.value+' + '+self.text[self.pos:]
+                self.current_char = self.text[self.pos]
+                return Token(ASSIGN,'=')
+            elif self.current_char == '-' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.text = self.text[:self.pos]+self.prev_token.value+' - '+self.text[self.pos:]
+                self.current_char = self.text[self.pos]
+                return Token(ASSIGN,'=')
+            elif self.current_char == '*' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.text = self.text[:self.pos]+self.prev_token.value+' * '+self.text[self.pos:]
+                self.current_char = self.text[self.pos]
+                return Token(ASSIGN,'=')
+            elif self.current_char == '/' and self.peek() == '=':
+                self.advance()
+                self.advance()
+                self.text = self.text[:self.pos]+self.prev_token.value+' / '+self.text[self.pos:]
+                self.current_char = self.text[self.pos]
+                return Token(ASSIGN,'=')                        
             elif self.current_char == '+':
                 self.advance()
-                return Token(PLUS,'+')
+                self.prev_token = Token(PLUS,'+')
+                return self.prev_token
             elif self.current_char == '-':
                 self.advance()
-                return Token(MINUS,'-') 
+                self.prev_token = Token(MINUS,'-')
+                return self.prev_token 
             elif self.current_char == '*':
                 self.advance()
-                return Token(MUL,'*')
+                self.prev_token = Token(MUL,'*')
+                return self.prev_token
             elif self.current_char == '/':
                 self.advance()
-                return Token(DIV,'/')
+                self.prev_token = Token(DIV,'/')
+                return self.prev_token
             elif self.current_char == '(':
                 self.advance()
-                return Token(LPAREN,'(')
+                self.prev_token = Token(LPAREN,'(')
+                return self.prev_token
             elif self.current_char == ')':
                 self.advance()
-                return Token(RPAREN,')')
+                self.prev_token = Token(RPAREN,')')
+                return self.prev_token
             elif self.current_char.isalpha():
-                return self._id()
+                self.prev_token = self._id()
+                return self.prev_token
             elif self.current_char == '=':
                 self.advance()
-                return Token(ASSIGN,'=')    
+                self.prev_token = Token(ASSIGN,'=')
+                return self.prev_token    
             elif self.current_char == ';':
                 self.advance()
-                return Token(SEMI,';')
+                self.prev_token = Token(SEMI,';')
+                return self.prev_token
             elif self.current_char == '{':
                 self.advance()
-                return Token(LBRACE, '{')
+                self.prev_token = Token(LBRACE, '{')
+                return self.prev_token
             elif self.current_char == '}':
                 self.advance()
-                return Token(RBRACE, '}')
+                self.prev_token = Token(RBRACE, '}')
+                return self.prev_token
             elif self.current_char == ':':
                 self.advance()
-                return Token(COLON, ':')
+                self.prev_token = Token(COLON, ':')
+                return self.prev_token
             elif self.current_char == '<':
                 self.advance()
-                return Token(LAB,'<')
+                self.prev_token = Token(LAB,'<')
+                return self.prev_token
             elif self.current_char == '>':
                 self.advance()
-                return Token(RAB,'>')
+                self.prev_token = Token(RAB,'>')
+                return self.prev_token
             elif self.current_char == '"':
-                return self._string()                                  
+                self.prev_token = self._string()
+                return self.prev_token
+            elif self.current_char == '\n':
+                self.skip_empty()
+                self.prev_token = Token(NWLN, '\n')
+                return self.prev_token 
+            print(self.current_char+' '+self.peek())                                         
             self.error()
         
         return Token(EOF,None) 
+
+# file = open('test.kt','r');source = file.read();lexer = Lexer(source)
