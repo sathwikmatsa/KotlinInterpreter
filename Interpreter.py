@@ -34,6 +34,13 @@ class Interpreter(NodeVisitor):
         for child in node.children:
             self.visit(child)
 
+    def visit_ConditionalBlock(self, node):
+        for child in node.children:
+            condition = self.visit(child[0])
+            if condition == True:
+                self.visit(child[1])
+                return        
+
     def visit_NoOp(self,node):
         pass
 
