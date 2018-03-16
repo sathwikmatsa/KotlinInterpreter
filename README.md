@@ -17,8 +17,8 @@ ki.py kotlinFilename
 ### Supported Operations
 * +		- addition  (numbers, string concatenation)
 * -		- subtraction (numbers)
-* /		- divide
-* *		- multiply
+* \/		- divide
+* \*		- multiply
 * =		- assign
 * <>	- not equal to
 * <		- less than
