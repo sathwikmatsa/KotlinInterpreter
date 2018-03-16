@@ -1,6 +1,6 @@
 from Lexemes import *
 
-################################################################################################## INTERPRETER
+############################################################## INTERPRETER ############################################################
 
 class NodeVisitor(object):
     def visit(self,node):
@@ -39,7 +39,13 @@ class Interpreter(NodeVisitor):
             condition = self.visit(child[0])
             if condition == True:
                 self.visit(child[1])
-                return        
+                return
+
+    def visit_WhileLoop(self, node):
+        while(self.visit(node.cond)):
+            self.visit(node.token)
+        return    
+
 
     def visit_NoOp(self,node):
         pass
@@ -93,13 +99,17 @@ class Interpreter(NodeVisitor):
         elif type(value) == str:
             dt = 'String'
         elif type(value) == bool:
-            dt = 'Boolean'          
-        self.GLOBAL_SCOPE[var_name] = [self.visit(node.right),dt,VAR_TYPE.type]
+            dt = 'Boolean' 
+        if var_name in self.GLOBAL_SCOPE:
+            self.error("Kotlin: Conflicting declarations: "+self.GLOBAL_SCOPE[var_name][2]+" "+var_name+": "+self.GLOBAL_SCOPE[var_name][1]+", "+str(VAR_TYPE.value).lower()+" "+var_name+": "+dt)             
+        self.GLOBAL_SCOPE[var_name] = [value,dt,VAR_TYPE.type]
 
     def visit_Declaration(self, node):
         VAR_TYPE = node.VAR_TYPE
         var_name = node.left.value
         dt = node.right.value
+        if var_name in self.GLOBAL_SCOPE:
+            self.error("Kotlin: Conflicting declarations: "+self.GLOBAL_SCOPE[var_name][2]+" "+var_name+": "+self.GLOBAL_SCOPE[var_name][1]+", "+str(VAR_TYPE.value).lower()+" "+var_name+": "+dt)
         self.GLOBAL_SCOPE[var_name] = [None,dt,VAR_TYPE.type]
 
     def visit_Dec_Init(self, node):
@@ -109,6 +119,8 @@ class Interpreter(NodeVisitor):
         value = self.visit(node.right)
         if dt != self.getType(value):
             self.error("Kotlin: The "+self.getType(value)+" literal does not conform to the expected type "+dt)
+        if var_name in self.GLOBAL_SCOPE:
+            self.error("Kotlin: Conflicting declarations: "+self.GLOBAL_SCOPE[var_name][2]+" "+var_name+": "+self.GLOBAL_SCOPE[var_name][1]+", "+str(VAR_TYPE.value).lower()+" "+var_name+": "+dt)    
         self.GLOBAL_SCOPE[var_name] = [value,dt,VAR_TYPE.type]    
     
     def visit_BinOp(self, node):
@@ -131,7 +143,13 @@ class Interpreter(NodeVisitor):
         elif node.op.type == EQ:
             return self.visit(node.left) == self.visit(node.right)
         elif node.op.type == NE:
-            return self.visit(node.left) != self.visit(node.right)                     
+            return self.visit(node.left) != self.visit(node.right)
+        elif node.op.type == MOD:
+            return self.visit(node.left) % self.visit(node.right)
+        elif node.op.type == AND:
+            return self.visit(node.left) and self.visit(node.right)
+        elif node.op.type == OR:
+            return self.visit(node.left) or self.visit(node.right)                                 
 
     def visit_Num(self, node):
         return node.value
@@ -168,9 +186,33 @@ class Interpreter(NodeVisitor):
             self.GLOBAL_SCOPE[var_name][0]-=1 
             return value-1          
 
-    def visit_PrintLn(self, node):
-        print(self.visit(node.node))
-        pass        
+    def visit_Print(self, node):
+        if node.nwln == 1:
+            print(self.visit(node.node))
+        else:
+            print(self.visit(node.node),end="")    
+        pass
+
+    def visit_ReadLine(self, node):    
+        if node.input_type == str:
+            return input()
+        elif node.input_type == int:
+            return int(input())
+        elif node.input_type == float:
+            return float(input())
+        elif node.input_type == bool:
+            return bool(input()) 
+
+    def visit_TypeCast(self, node):
+        v = self.visit(node.var)
+        if node.input_type == str:
+            return str(v)
+        elif node.input_type == int:
+            return int(v)
+        elif node.input_type == float:
+            return float(v)
+        elif node.input_type == bool:
+            return bool(v)                      
             
     def interpret(self):
         tree = self.parser.parse()
