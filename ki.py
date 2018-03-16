@@ -8,27 +8,17 @@ def main():
     if len(sys.argv) == 2:
         file = open(sys.argv[1],'r')
         source = file.read()
-        lexer = Lexer(source)
-        parser = Parser(lexer)
-        interpreter = Interpreter(parser)
-        result = interpreter.interpret()
-        print(result)
-    else:
-        print("SHELL MODE: still you need to type the whole program in a single line!")
-        while True:
-            try:
-                text = input('>>> ')
-            except EOFError:
-                break
-            if not text:
-                continue
-
-            lexer = Lexer(text)
+        try:
+            lexer = Lexer(source)
             parser = Parser(lexer)
             interpreter = Interpreter(parser)
             result = interpreter.interpret()
             print(result)
-
-
+        except Exception as e:
+           print(e)    
+    else:
+        print("Usage: ki.py kotlinFilename")
+        sys.exit()
+        
 if __name__ == '__main__':
     main()
