@@ -1,20 +1,20 @@
-###############################################################Token types
+###########################################################Token types##################################################################
 
-NUM,PLUS, MINUS, MUL, DIV, LPAREN, RPAREN, LBRACE, RBRACE, SEMI, EOF = 'NUM','PLUS', 'MINUS', 'MUL', 'DIV', '(', ')', '{', '}', ';', 'EOF'
+NUM, PLUS, MINUS, MUL, DIV = 'NUM','PLUS', 'MINUS', 'MUL', 'DIV'
+LPAREN, RPAREN, LBRACE, RBRACE, SEMI, EOF =  '(', ')', '{', '}', ';', 'EOF'
 ASSIGN, COLON = '=', ':'
 ID = 'ID'
 Int , Double, String, Boolean = 'Int', 'Double', 'String', 'Boolean' #Supported Data Types
-LT = '<'
-GT = '>'
+LT, GT = '<','>'
 QUOTES = '"'
 NWLN = '\n'
-INC = '++'
-DEC = '--'
-GTE = '>='
-LTE = '<='
-EQ = '=='
-NE = '!='
-
+INC, DEC = '++','--'
+GTE, LTE, EQ, NE = '>=','<=','==','!='
+MC = '()'
+MOF = '.'
+NS = '!!'
+MOD = '%'
+AND, OR = '&&','||'
 
 class Token(object):
 
@@ -36,6 +36,15 @@ RESERVED_KEYWORDS = {
     'args': Token('args','args'),
     'Array': Token('Array','Array'),
     'println': Token('println','println'),
+    'print': Token('print','print'),
     'true': Token('true','true'),
     'false': Token('false','false'),
+    'if': Token('if','if'),
+    'else': Token('else','else'),
+    'while': Token('while','while'),
+    'readLine': Token('readLine','readLine'),
+    'toInt': Token('toInt','toInt'),
+    'toBoolean': Token('toBoolean','toBoolean'),
+    'toDouble': Token('toDouble','toDouble'),
+    'toString': Token('toString','toString'),
 }        
