@@ -15,20 +15,20 @@ ki.py kotlinFilename
   - Example: "Justin Bieber"
 
 ### Supported Operations
-* +		- addition  (numbers, string concatenation)
-* -		- subtraction (numbers)
+* \+		- addition  (numbers, string concatenation)
+* \-		- subtraction (numbers)
 * \/		- divide
 * \*		- multiply
-* =		- assign
-* <>	- not equal to
-* <		- less than
-* >		- greater than
-* >=	- greater than or equal to
-* <=	- less than or equal to
-* ==  - equals
-* OR	- logical or
-* AND	- logical and
-* %   - modulo
+* \=		- assign
+* \!=	  - not equal to
+* \<	  - less than
+* \>	  - greater than
+* \>=	  - greater than or equal to
+* \<=	  - less than or equal to
+* \==   - equals
+* OR	  - logical or
+* AND	  - logical and
+* %     - modulo
 
 ### Supported constructs (conditional/loop)
 * if/else if/else*(condition){block}
