@@ -1,6 +1,6 @@
 from Lexemes import *
 
-######################################################################################################### PARSER        
+############################################################ PARSER ################################################################        
 
 class AST(object):
     pass
@@ -39,7 +39,16 @@ class Post_Unary(AST):
 class Pre_Unary(AST):
     def __init__(self,op,var):
         self.token = self.op = op
-        self.var = var            
+        self.var = var
+
+class ReadLine(AST):
+    def __init__(self,input_type = str):
+        self.input_type = input_type
+
+class TypeCast(AST):
+    def __init__(self, var, input_type):
+        self.var = var
+        self.input_type = input_type                           
 
 class Compound(AST):
     """Represents a '{ ... }' block"""
@@ -48,7 +57,12 @@ class Compound(AST):
 
 class ConditionalBlock(AST):
     def __init__(self):
-        self.children = []        
+        self.children = [] 
+
+class WhileLoop(AST):
+    def __init__(self,cond,token):
+        self.cond = cond
+        self.token = token               
 
 class InitializeVariable(AST):
     def __init__(self, VAR_TYPE, left, op, right):
@@ -83,9 +97,10 @@ class Var(AST):
         self.token = token
         self.value = token.value
 
-class PrintLn(AST):
-    def __init__(self,node):
-        self.node = node                
+class Print(AST):
+    def __init__(self,node,nwln):
+        self.node = node
+        self.nwln = nwln                
 
 class NoOp(AST):
     pass                  
@@ -103,10 +118,10 @@ class Parser(object):
         if(self.current_token.type == token_type):
             self.current_token = self.lexer.get_next_token()
         else:
-            self.error()
+            self.error("Error:Kotlin: Expected token: "+str(self.current_token.value))
 
     def factor(self):
-        """factor : (PLUS | MINUS) factor | NUM | LPAREN expr RPAREN | String | pre _var | post _var"""
+        """factor : (PLUS | MINUS) factor | NUM | LPAREN expr RPAREN | String | pre _var | post _var | readLine() | var.toX()"""
         token = self.current_token
         if token.type == PLUS:
             self.eat(PLUS)
@@ -123,6 +138,20 @@ class Parser(object):
             self.eat(LPAREN)
             node = self.expr()
             self.eat(RPAREN)
+            token = self.current_token
+            if token.type == MOF:
+                self.eat(MOF)
+                if self.current_token.type == 'toInt':
+                    t = int
+                elif self.current_token.type == 'toString':
+                    t = str
+                elif self.current_token.type == 'toDouble':
+                    t = float
+                elif self.current_token.type == 'toBoolean':
+                    t = bool
+                self.eat(self.current_token.type)
+                self.eat(MC)
+                return TypeCast(node, t)
             return node
         elif token.type == String:
             self.eat(String)
@@ -153,23 +182,62 @@ class Parser(object):
                 return Post_Unary(token,node)
             elif token.type == DEC:
                 self.eat(DEC)    
-                return Post_Unary(token,node)                 
-            return node    
+                return Post_Unary(token,node)
+            elif token.type == MOF:
+                self.eat(MOF)
+                if self.current_token.type == 'toInt':
+                    t = int
+                elif self.current_token.type == 'toString':
+                    t = str
+                elif self.current_token.type == 'toDouble':
+                    t = float
+                elif self.current_token.type == 'toBoolean':
+                    t = bool
+                self.eat(self.current_token.type)
+                self.eat(MC)
+                return TypeCast(node, t)                                    
+            return node
+        elif token.type == 'readLine':
+            self.eat('readLine')
+            self.eat(MC)
+            if self.current_token.type == NS:
+                self.eat(NS)
+                self.eat(MOF)
+                if self.current_token.type == 'toString':
+                    t = str
+                elif self.current_token.type == 'toInt':
+                    t = int 
+                elif self.current_token.type == 'toDouble':
+                    t = float
+                elif self.current_token.type == 'toBoolean':
+                    t = bool  
+                self.eat(self.current_token.type)
+                self.eat(MC)
+                return ReadLine(t)
+            elif self.current_token.type == MOF:
+                self.eat(MOF)
+                if self.current_token.type == 'toString':
+                    self.eat('toString')
+                    self.eat(MC)
+                    return ReadLine()
+                elif self.current_token.type in ('toInt','toBoolean','toDouble'):
+                    self.error("Kotlin: Only non-null asserted (!!.) calls are allowed on a nullable receiver of type String?")
+                else:
+                    self.error()
+            else:
+                return ReadLine()        
 
     def term(self):
         node = self.factor()
 
-        while self.current_token.type in (MUL,DIV):
+        while self.current_token.type in (MUL,DIV,MOD):
             token = self.current_token
-            if token.type == MUL:
-                self.eat(MUL)
-            elif token.type == DIV:
-                self.eat(DIV)
+            self.eat(token.type)    
             node = BinOp(left = node, op = token, right = self.factor())
                     
         return node   
 
-    def expr2(self):
+    def expr4(self):
         node = self.term()
 
         while self.current_token.type in (PLUS,MINUS):
@@ -182,10 +250,30 @@ class Parser(object):
                
         return node
 
+    def expr3(self):
+        node = self.expr4()
+
+        while self.current_token.type in (LT,GT,GTE,LTE):
+            token = self.current_token
+            self.eat(token.type)
+            node = BinOp(left =node, op = token, right = self.expr4()) 
+               
+        return node
+
+    def expr2(self):
+        node = self.expr3()
+
+        while self.current_token.type in (EQ,NE):
+            token = self.current_token
+            self.eat(token.type)
+            node = BinOp(left =node, op = token, right = self.expr3()) 
+               
+        return node
+
     def expr1(self):
         node = self.expr2()
 
-        while self.current_token.type in (LT,GT,GTE,LTE):
+        while self.current_token.type in (AND):
             token = self.current_token
             self.eat(token.type)
             node = BinOp(left =node, op = token, right = self.expr2()) 
@@ -195,12 +283,12 @@ class Parser(object):
     def expr(self):
         node = self.expr1()
 
-        while self.current_token.type in (EQ,NE):
+        while self.current_token.type in (OR):
             token = self.current_token
             self.eat(token.type)
             node = BinOp(left =node, op = token, right = self.expr1()) 
                
-        return node        
+        return node              
 
     def empty(self):
         """An empty production"""
@@ -216,6 +304,12 @@ class Parser(object):
         """assignment_statement : variable ASSIGN expr"""
         left = self.variable()
         token = self.current_token
+        if token.type == INC:
+            self.eat(INC)
+            return Post_Unary(token,left)
+        elif token.type == DEC:
+            self.eat(DEC)    
+            return Post_Unary(token,left)
         self.eat(ASSIGN)
         right = self.expr()
         node = Assign(left, token, right) 
@@ -247,9 +341,14 @@ class Parser(object):
         return node  
 
     def print_statement(self):
-        self.eat('println')
+        try:
+            self.eat('println')
+            nwln = 1
+        except:
+            self.eat('print')
+            nwln = 0    
         value = self.expr()
-        node = PrintLn(value)
+        node = Print(value,nwln)
         return node
 
     def if_block(self):
@@ -277,7 +376,14 @@ class Parser(object):
                 self.error("unexpected token of type: "+str(self.current_token.type)+': '+str(self.current_token.value))
             while self.current_token.type == NWLN:
                 self.eat(NWLN)       
-        return blocks  
+        return blocks
+
+    def while_loop(self):
+        self.eat('while')
+        condition = self.expr()
+        cs = self.compound_statement()
+        block = WhileLoop(condition,cs)
+        return block
 
     def statement(self):
         """
@@ -296,10 +402,22 @@ class Parser(object):
             node = self.assignment_statement()
         elif self.current_token.type in ('val','var'):
             node = self.decl_or_init()
-        elif self.current_token.type == 'println':
+        elif self.current_token.type in ('println','print'):
             node = self.print_statement()
         elif self.current_token.type == 'if':
             node = self.if_block()
+        elif self.current_token.type == 'while':
+            node = self.while_loop()
+        elif self.current_token.type == INC:
+            token = self.current_token
+            self.eat(INC)
+            node = self.variable()
+            return Pre_Unary(token,node)
+        elif self.current_token.type == DEC:
+            token = self.current_token
+            self.eat(DEC)
+            node = self.variable()
+            return Pre_Unary(token,node)        
         else:
             node = self.empty()
         return node
@@ -324,8 +442,6 @@ class Parser(object):
                     if self.current_token.type == NWLN:
                         self.eat(NWLN)       
             results.append(self.statement())
-            print(self.current_token)
-            print(self.lexer.last_token)
         if self.current_token.type == ID:
             print(self.current_token)
             self.error()
@@ -338,8 +454,6 @@ class Parser(object):
         """   
         self.eat(LBRACE)
         nodes = self.statement_list()
-        print(self.current_token)
-        print(self.lexer.last_token)
         self.eat(RBRACE)
 
         root = Compound()
